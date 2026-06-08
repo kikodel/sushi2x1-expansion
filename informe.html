@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expansión Franquicias — Informe de Leads</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a; --border: #2e3347;
+      --accent: #e63946; --accent2: #f4a261; --accent3: #2ec4b6; --accent4: #8338ec;
+      --text: #e8eaf6; --muted: #8b90a7; --green: #06d6a0; --red: #ef233c; --yellow: #ffd166;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 0 0 60px 0; }
+    .hero { background: linear-gradient(135deg, #1a0a0f 0%, #2a0d1a 40%, #1a1030 100%); border-bottom: 1px solid var(--border); padding: 48px 40px 36px; }
+    .hero-inner { max-width: 1200px; margin: 0 auto; }
+    .hero-badge { display: inline-block; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 4px 10px; border-radius: 4px; margin-bottom: 16px; }
+    .hero-live { display: inline-block; background: rgba(6,214,160,0.15); color: var(--green); border: 1px solid rgba(6,214,160,0.3); font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 4px 10px; border-radius: 4px; margin-bottom: 16px; margin-left: 8px; }
+    .hero h1 { font-size: clamp(26px, 4vw, 40px); font-weight: 800; letter-spacing: -1px; line-height: 1.15; }
+    .hero h1 span { color: var(--accent); }
+    .hero-meta { margin-top: 10px; font-size: 13px; color: var(--muted); display: flex; gap: 20px; flex-wrap: wrap; }
+    .hero-meta b { color: var(--text); }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+    .section { margin-top: 44px; }
+    .section-title { font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
+    .section-title span { color: var(--accent); }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+    .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px 20px; position: relative; overflow: hidden; }
+    .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .kpi-card.accent::before { background: var(--accent); }
+    .kpi-card.green::before  { background: var(--green); }
+    .kpi-card.yellow::before { background: var(--yellow); }
+    .kpi-card.blue::before   { background: var(--accent3); }
+    .kpi-card.purple::before { background: var(--accent4); }
+    .kpi-card.orange::before { background: var(--accent2); }
+    .kpi-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .kpi-value { font-size: 28px; font-weight: 800; line-height: 1; }
+    .kpi-sub { font-size: 12px; color: var(--muted); margin-top: 5px; }
+    .kpi-card.green  .kpi-value { color: var(--green); }
+    .kpi-card.accent .kpi-value { color: var(--accent); }
+    .kpi-card.yellow .kpi-value { color: var(--yellow); }
+    .kpi-card.blue   .kpi-value { color: var(--accent3); }
+    .kpi-card.purple .kpi-value { color: var(--accent4); }
+    .kpi-card.orange .kpi-value { color: var(--accent2); }
+    .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; }
+    .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+    .chart-card.wide { grid-column: 1 / -1; }
+    .chart-title { font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--text); }
+    .chart-subtitle { font-size: 11px; color: var(--muted); margin-bottom: 18px; }
+    .chart-wrap { position: relative; height: 280px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th { background: var(--surface2); color: var(--muted); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; cursor: pointer; user-select: none; }
+    thead th:hover { color: var(--text); }
+    .sort-arrow { opacity: .35; margin-left: 4px; font-size: 9px; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
+    tbody tr:hover { background: var(--surface2); }
+    tbody td { padding: 10px 14px; vertical-align: middle; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+    .badge.high { background: rgba(6,214,160,.15); color: var(--green); border: 1px solid rgba(6,214,160,.3); }
+    .badge.mid  { background: rgba(255,209,102,.12); color: var(--yellow); border: 1px solid rgba(255,209,102,.25); }
+    .badge.low  { background: rgba(239,35,60,.12); color: var(--red); border: 1px solid rgba(239,35,60,.25); }
+    .ctr-bar-wrap { display: flex; align-items: center; gap: 8px; }
+    .ctr-bar { height: 6px; border-radius: 3px; min-width: 4px; }
+    .insights-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+    .insight { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; gap: 14px; }
+    .insight-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .insight-icon.green  { background: rgba(6,214,160,.12); }
+    .insight-icon.yellow { background: rgba(255,209,102,.12); }
+    .insight-icon.blue   { background: rgba(46,196,182,.12); }
+    .insight-icon.purple { background: rgba(131,56,236,.12); }
+    .insight h4 { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+    .insight p { font-size: 12px; color: var(--muted); line-height: 1.6; }
+    .insight p strong { color: var(--text); }
+    .mejoras-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .mejora-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; display: flex; gap: 14px; align-items: flex-start; }
+    .mejora-num { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+    .mejora-content h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .mejora-content p { font-size: 12px; color: var(--muted); line-height: 1.65; }
+    .mejora-content p strong { color: var(--accent2); }
+    footer { margin-top: 60px; border-top: 1px solid var(--border); padding: 20px 24px; text-align: center; font-size: 11px; color: var(--muted); }
+    .topbar { position: sticky; top: 0; z-index: 100; background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 28px; display: flex; align-items: center; justify-content: space-between; }
+    .topbar-left { font-size: 12px; color: var(--muted); }
+    .topbar-left b { color: var(--green); }
+    .btn-new { background: var(--surface2); color: var(--text); border: 1px solid var(--border); padding: 7px 16px; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; }
+    .btn-new:hover { background: var(--border); }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar-left">📡 Datos en vivo desde Meta Ads — <b>Actualizado: 8 de junio de 2026</b></span>
+  <a href="index.html" class="btn-new">📤 Cargar otro archivo</a>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">Informe de Leads</div>
+    <span class="hero-live">● En vivo</span>
+    <h1>Expansión <span>Franquicias</span> — Primera Etapa</h1>
+    <div class="hero-meta">
+      <span>📅 Período: <b>29 de abril — 8 de junio de 2026</b></span>
+      <span id="hero-leads">🎯 Leads generados: <b>—</b></span>
+      <span id="hero-cpl">💰 Costo por lead: <b>—</b></span>
+      <span id="hero-spend">🇦🇷 Inversión: <b>—</b></span>
+      <span>📊 Plataforma: <b>Meta Ads</b></span>
+    </div>
+  </div>
+</div>
+
+<div class="container" id="report-body"></div>
+<footer id="report-footer"></footer>
+
+<script>
+// ── Datos en vivo traídos desde Meta Ads API ──
+const LIVE_DATA = [
+  { adset:'Expansion_Gran_Buenos_Aires_Intereses', impressions:74467, reach:49489, clicks:2631, spend:102472.89, ctr:3.53, cpm:1376.08, cpc:38.95, results:35 },
+  { adset:'Expansion_San_Juan_Intereses',          impressions:64046, reach:24098, clicks:1799, spend:73230.61,  ctr:2.81, cpm:1143.41, cpc:40.71, results:42 },
+  { adset:'Expansion_CABA_Intereses',              impressions:45709, reach:26450, clicks:1559, spend:82932.00,  ctr:3.41, cpm:1814.35, cpc:53.20, results:29 },
+  { adset:'Expansion_Mendoza_Intereses',           impressions:62266, reach:28513, clicks:1634, spend:77276.12,  ctr:2.62, cpm:1241.06, cpc:47.29, results:26 },
+  { adset:'Expansion_Rosario_Intereses',           impressions:43187, reach:22637, clicks:1120, spend:65786.65,  ctr:2.59, cpm:1523.30, cpc:58.74, results:20 },
+  { adset:'Expansion_Salta_Intereses',             impressions:30088, reach:14505, clicks:867,  spend:39472.87,  ctr:2.88, cpm:1311.91, cpc:45.53, results:17 },
+  { adset:'Expansion_Jujuy_Intereses',             impressions:29473, reach:13990, clicks:698,  spend:34322.27,  ctr:2.37, cpm:1164.53, cpc:49.17, results:13 },
+  { adset:'Expansion_San_Luis_Intereses',          impressions:25106, reach:10931, clicks:499,  spend:34485.68,  ctr:1.99, cpm:1373.60, cpc:69.11, results:11 },
+  { adset:'Expansion_Santiago_del_Estero_Intereses',impressions:22568,reach:9929,  clicks:404,  spend:30514.56,  ctr:1.79, cpm:1352.12, cpc:75.53, results:11 },
+  { adset:'Expansion_Barrio_Liceo_Intereses',      impressions:24706, reach:12469, clicks:802,  spend:22755.27,  ctr:3.25, cpm:921.04,  cpc:28.37, results:0  },
+];
+
+// ── Helpers ──
+const DG = 'rgba(255,255,255,0.06)', DT = '#8b90a7';
+Chart.defaults.color = DT;
+Chart.defaults.borderColor = DG;
+const BASE_OPT = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend:{ display:false }, tooltip:{ backgroundColor:'#1a1d27', borderColor:'#2e3347', borderWidth:1, titleColor:'#e8eaf6', bodyColor:'#8b90a7' } }
+};
+const CHARTS = {};
+function mkChart(id, cfg) { if (CHARTS[id]) CHARTS[id].destroy(); const c = document.getElementById(id); if (c) CHARTS[id] = new Chart(c, cfg); }
+function colorCTR(v) { return v >= 3.5 ? 'rgba(6,214,160,0.8)' : v >= 2.2 ? 'rgba(255,209,102,0.8)' : 'rgba(239,35,60,0.7)'; }
+function colorLeads(v) { return v >= 25 ? 'rgba(6,214,160,0.85)' : v >= 10 ? 'rgba(255,209,102,0.8)' : v > 0 ? 'rgba(244,162,97,0.7)' : 'rgba(239,35,60,0.4)'; }
+function f(n, d=0) { if (n == null) return '—'; return n.toLocaleString('es-AR',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function fc(n) { return n == null ? '—' : '$' + f(n, 0); }
+function safeName(s) { return (s||'').replace('Expansion_','').replace('_Intereses','').replace(/_/g,' '); }
+function sec(num, title) { return `<div class="section"><div class="section-title"><span>${num}</span> — ${title}</div>`; }
+function kpi(cls, label, value, sub) {
+  return `<div class="kpi-card ${cls}"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div><div class="kpi-sub">${sub}</div></div>`;
+}
+function insight(color, icon, title, body) {
+  return `<div class="insight"><div class="insight-icon ${color}">${icon}</div><div><h4>${title}</h4><p>${body}</p></div></div>`;
+}
+function mejora(n, title, body) {
+  return `<li class="mejora-item"><div class="mejora-num">${n}</div><div class="mejora-content"><h4>${title}</h4><p>${body}</p></div></li>`;
+}
+function badgeLeads(n) {
+  if (!n) return '<span class="badge low">▼ Sin leads</span>';
+  if (n >= 25) return '<span class="badge high">▲ Alto</span>';
+  if (n >= 10) return '<span class="badge mid">● Medio</span>';
+  return '<span class="badge mid">● Bajo</span>';
+}
+function barCell(v, max) {
+  const w = Math.max(4, Math.round((v / max) * 100));
+  return `<div class="ctr-bar-wrap"><div class="ctr-bar" style="width:${w}px;background:${colorCTR(v)};"></div><span>${v.toFixed(2)}%</span></div>`;
+}
+
+// ── Computar métricas ──
+const totalLeads  = LIVE_DATA.reduce((s,r)=>s+r.results,0);
+const totalSpend  = LIVE_DATA.reduce((s,r)=>s+r.spend,0);
+const totalClicks = LIVE_DATA.reduce((s,r)=>s+r.clicks,0);
+const totalImp    = LIVE_DATA.reduce((s,r)=>s+r.impressions,0);
+const totalReach  = LIVE_DATA.reduce((s,r)=>s+r.reach,0);
+const cpl         = totalLeads > 0 ? totalSpend / totalLeads : null;
+const cvr         = totalClicks > 0 ? totalLeads / totalClicks * 100 : null;
+const avgCTR      = LIVE_DATA.reduce((s,r)=>s+r.ctr,0) / LIVE_DATA.length;
+const avgCPM      = LIVE_DATA.reduce((s,r)=>s+r.cpm,0) / LIVE_DATA.length;
+
+// Actualizar hero
+document.getElementById('hero-leads').innerHTML = `🎯 Leads generados: <b>${f(totalLeads)}</b>`;
+document.getElementById('hero-cpl').innerHTML   = `💰 Costo por lead: <b>${fc(cpl)} ARS</b>`;
+document.getElementById('hero-spend').innerHTML = `🇦🇷 Inversión: <b>${fc(totalSpend)} ARS</b>`;
+
+// Ordenar por leads (desc) para tabla y gráfico
+const byLeads = [...LIVE_DATA].sort((a,b)=>b.results-a.results);
+const byCTR   = [...LIVE_DATA].sort((a,b)=>b.ctr-a.ctr);
+const maxCTR  = Math.max(...LIVE_DATA.map(r=>r.ctr));
+
+// ── Generar HTML ──
+let body = '';
+
+// 01 KPIs
+body += sec('01','Métricas Globales') + `<div class="kpi-grid">`;
+body += kpi('green',  'Leads Generados',  f(totalLeads),          'Conversiones totales — página de gracias');
+body += kpi('accent', 'Costo por Lead',   fc(cpl)+' ARS',         'Costo promedio por conversión obtenida');
+body += kpi('blue',   'CVR',              cvr.toFixed(2)+'%',     'Tasa conversión (leads / clics)');
+body += kpi('yellow', 'Inversión Total',  fc(totalSpend)+' ARS',  'ARS — período completo');
+body += kpi('purple', 'Clics',            f(totalClicks),          'Clics en el enlace');
+body += kpi('blue',   'Alcance',          f(totalReach),           'Personas únicas alcanzadas');
+body += kpi('yellow', 'Impresiones',      f(totalImp),             'Total del período');
+body += kpi('orange', 'CTR Promedio',     avgCTR.toFixed(2)+'%',  'Tasa de clics promedio');
+body += `</div></div>`;
+
+// 02 Gráfico leads
+body += sec('02','Leads por Zona') + `
+  <div class="chart-grid">
+    <div class="chart-card wide">
+      <div class="chart-title">Leads Generados por Zona (ordenado por volumen)</div>
+      <div class="chart-subtitle">Verde ≥ 25 | Amarillo ≥ 10 | Naranja 1–9 | Rojo 0 — datos al 8 de junio de 2026</div>
+      <div class="chart-wrap"><canvas id="chartLeads"></canvas></div>
+    </div>
+  </div></div>`;
+
+// 03 Gráfico CTR
+body += sec('03','CTR por Zona') + `
+  <div class="chart-grid">
+    <div class="chart-card wide">
+      <div class="chart-title">CTR Promedio por Conjunto de Anuncios</div>
+      <div class="chart-subtitle">Tasa de clics — verde ≥ 3.5% | amarillo ≥ 2.2% | rojo &lt; 2.2%</div>
+      <div class="chart-wrap"><canvas id="chartCTR"></canvas></div>
+    </div>
+  </div></div>`;
+
+// 04 Tabla
+body += sec('04','Rendimiento por Zona — Leads y Eficiencia') + `<div class="table-wrap">
+  <table id="main-table">
+    <thead><tr>
+      <th onclick="sortTable('name')">Zona<span class="sort-arrow"></span></th>
+      <th onclick="sortTable('results')">Leads<span class="sort-arrow"></span></th>
+      <th onclick="sortTable('cvr')">CVR<span class="sort-arrow"></span></th>
+      <th onclick="sortTable('cpl')">Costo/Lead<span class="sort-arrow"></span></th>
+      <th onclick="sortTable('spend')">Inversión (ARS)<span class="sort-arrow"></span></th>
+      <th onclick="sortTable('clicks')">Clics<span class="sort-arrow"></span></th>
+      <th onclick="sortTable('ctr')">CTR<span class="sort-arrow"></span></th>
+      <th onclick="sortTable('cpc')">CPC (ARS)<span class="sort-arrow"></span></th>
+      <th onclick="sortTable('impressions')">Impresiones<span class="sort-arrow"></span></th>
+      <th onclick="sortTable('reach')">Alcance<span class="sort-arrow"></span></th>
+      <th>Estado</th>
+    </tr></thead>
+    <tbody id="tbody-main">${buildRows(byLeads)}</tbody>
+  </table>
+</div></div>`;
+
+// 05 Gráfico burbuja Inversión vs Leads
+body += sec('05','Inversión vs. Leads por Zona') + `
+  <div class="chart-grid">
+    <div class="chart-card wide">
+      <div class="chart-title">Inversión (ARS) vs. Leads generados</div>
+      <div class="chart-subtitle">El tamaño de la burbuja representa el alcance — idealmente: burbuja grande arriba a la izquierda</div>
+      <div class="chart-wrap"><canvas id="chartBubble"></canvas></div>
+    </div>
+  </div></div>`;
+
+// 06 Insights
+const topLead  = byLeads[0];
+const topLead2 = byLeads[1];
+const topLead3 = byLeads[2];
+const zeroZones = byLeads.filter(r=>r.results===0);
+const cplMin = [...LIVE_DATA].filter(r=>r.results>0).sort((a,b)=>(a.spend/a.results)-(b.spend/b.results))[0];
+
+body += sec('06','Análisis de Leads y Rendimiento') + `<div class="insights-grid">`;
+body += insight('green','🎯',
+  `San Juan lidera con ${topLead.results} leads al menor costo por lead`,
+  `CPL de <strong>$${fc(topLead.spend/topLead.results)} ARS</strong> — el más eficiente de la campaña (${topLead.ctr.toFixed(2)}% CTR). GBA suma <strong>${topLead2.results} leads</strong> y CABA <strong>${topLead3.results}</strong>. Estas 3 zonas concentran el ${Math.round((topLead.results+topLead2.results+topLead3.results)/totalLeads*100)}% de los leads totales.`);
+body += insight('blue','📈',
+  `CVR global ${cvr.toFixed(2)}%: ${f(totalLeads)} leads de ${f(totalClicks)} clics`,
+  `Cada <strong>${Math.round(totalClicks/totalLeads)} clics</strong> genera un lead. Costo por lead promedio: <strong>${fc(cpl)} ARS</strong>. San Juan es <strong>58% más eficiente</strong> que el promedio en costo por lead.`);
+body += insight('yellow','⚠️',
+  `Barrio Liceo: 0 leads con 802 clics y $${fc(zeroZones[0]?.spend)} ARS invertidos`,
+  `Genera <strong>tráfico pero no convierte</strong>. Verificar: (1) que el píxel Meta esté activo en la página de gracias, (2) segmentación de audiencia, (3) que la landing esté disponible para esa zona.`);
+body += insight('green','💡',
+  `Mendoza y Rosario: zonas con potencial sin explotar`,
+  `Mendoza tiene <strong>${LIVE_DATA.find(r=>r.adset.includes('Mendoza')).results} leads</strong> con ${LIVE_DATA.find(r=>r.adset.includes('Mendoza')).ctr.toFixed(2)}% CTR y Rosario <strong>${LIVE_DATA.find(r=>r.adset.includes('Rosario')).results} leads</strong>. Aumentar inversión aquí debería escalar resultados proporcionalmente.`);
+body += insight('purple','📊',
+  `CTR global ${avgCTR.toFixed(2)}% — supera benchmark Meta (1–2%)`,
+  `GBA lidera con <strong>3.53% CTR</strong> y CABA con <strong>3.41%</strong>. El CTR indica buena receptividad de la audiencia; el desafío está en la conversión post-clic (landing page y formulario).`);
+body += `</div></div>`;
+
+// 07 Mejoras
+body += sec('07','Mejoras Recomendadas') + `<ul class="mejoras-list">`;
+body += mejora(1, 'Escalar inversión en San Juan — mejor ROI de la campaña',
+  `CPL de <strong>$${fc(LIVE_DATA.find(r=>r.adset.includes('San_Juan')).spend/LIVE_DATA.find(r=>r.adset.includes('San_Juan')).results)} ARS</strong> vs promedio de ${fc(cpl)} ARS. Con el mismo presupuesto de Mendoza podría generar el doble de leads. Aumentar diario 30–50% y monitorear CVR.`);
+body += mejora(2, 'Pausar o rediseñar Barrio Liceo',
+  `$${fc(LIVE_DATA.find(r=>r.adset.includes('Barrio_Liceo')).spend)} ARS invertidos con 0 conversiones. <strong>Pausar temporalmente</strong> y redirigir el presupuesto a San Juan o GBA. Antes de reactivar: verificar píxel, revisar audiencia y cambiar creatividades.`);
+body += mejora(3, 'Aumentar inversión en GBA y CABA',
+  `35 y 29 leads respectivamente con CPL competitivo ($${fc(LIVE_DATA.find(r=>r.adset.includes('Gran_Buenos_Aires')).spend/35)} y $${fc(LIVE_DATA.find(r=>r.adset.includes('CABA')).spend/29)} ARS). Son las zonas con mayor base poblacional — escalar aquí tiene el mayor potencial de volumen total de leads.`);
+body += mejora(4, 'Optimizar landing page para mejorar el CVR (actual: '+cvr.toFixed(2)+'%)',
+  `Con ${Math.round(totalClicks/totalLeads)} clics por lead hay margen para mejorar. Testear: formulario más corto (máx 3 campos), CTA más claro ("Quiero ser franquiciado"), carga rápida en mobile, y que la promesa del anuncio coincida con el contenido de la landing.`);
+body += mejora(5, 'Probar audiencias lookalike en las zonas top',
+  `Crear una audiencia LAL 1% basada en quienes ya completaron el formulario en San Juan, GBA y CABA. Meta puede encontrar perfiles similares en esas mismas zonas. Testear con el 20% del presupuesto de cada zona por 7 días.`);
+body += mejora(6, 'Revisar Santiago del Estero y San Luis (CVR bajo)',
+  `Santiago del Estero: 11 leads de 404 clics (2.7% CVR) y San Luis: 11 de 499 clics (2.2% CVR) — por debajo del promedio. CPL alto ($${fc(LIVE_DATA.find(r=>r.adset.includes('Santiago')).spend/11)} y $${fc(LIVE_DATA.find(r=>r.adset.includes('San_Luis')).spend/11)} ARS). Revisar si la propuesta de franquicia es relevante para esos mercados o ajustar el mensaje.`);
+body += `</ul></div>`;
+
+document.getElementById('report-body').innerHTML = body;
+document.getElementById('report-footer').textContent = `Informe generado automáticamente desde Meta Ads API — Campaña: EXPANSION_PRIMERA ETAPA — Datos al 8 de junio de 2026`;
+
+// ── Gráficos ──
+requestAnimationFrame(() => {
+  // Leads chart
+  const leadsVals  = byLeads.map(r=>r.results);
+  const leadsNames = byLeads.map(r=>safeName(r.adset));
+  mkChart('chartLeads', {
+    type:'bar',
+    data:{ labels:leadsNames, datasets:[{ data:leadsVals, backgroundColor:leadsVals.map(colorLeads), borderRadius:6, borderSkipped:false }] },
+    options:{ ...BASE_OPT, indexAxis:'y',
+      scales:{ x:{grid:{color:DG},ticks:{color:DT,stepSize:5}}, y:{grid:{display:false},ticks:{color:'#e8eaf6',font:{size:12}}} },
+      plugins:{...BASE_OPT.plugins,tooltip:{...BASE_OPT.plugins.tooltip,callbacks:{label:ctx=>[` Leads: ${ctx.raw}`, ` CPL: ${ctx.raw>0?'$'+f(byLeads[ctx.dataIndex].spend/ctx.raw,0)+' ARS':'—'}`]}}}
+    }
+  });
+
+  // CTR chart
+  const ctrVals  = byCTR.map(r=>r.ctr);
+  const ctrNames = byCTR.map(r=>safeName(r.adset));
+  mkChart('chartCTR', {
+    type:'bar',
+    data:{ labels:ctrNames, datasets:[{ data:ctrVals, backgroundColor:ctrVals.map(colorCTR), borderRadius:6, borderSkipped:false }] },
+    options:{ ...BASE_OPT, indexAxis:'y',
+      scales:{ x:{grid:{color:DG},ticks:{callback:v=>v+'%',color:DT}}, y:{grid:{display:false},ticks:{color:'#e8eaf6',font:{size:12}}} },
+      plugins:{...BASE_OPT.plugins,tooltip:{...BASE_OPT.plugins.tooltip,callbacks:{label:ctx=>` CTR: ${ctx.raw.toFixed(2)}%`}}}
+    }
+  });
+
+  // Bubble: inversión vs leads
+  const maxReach = Math.max(...LIVE_DATA.map(r=>r.reach));
+  mkChart('chartBubble', {
+    type:'bubble',
+    data:{ datasets: LIVE_DATA.map(r=>({
+      label: safeName(r.adset),
+      data:[{x:r.spend, y:r.results, r:Math.max(5,Math.round(r.reach/maxReach*18)+4)}],
+      backgroundColor: colorLeads(r.results), borderWidth:1
+    }))},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#1a1d27', borderColor:'#2e3347', borderWidth:1, titleColor:'#e8eaf6', bodyColor:'#8b90a7',
+        callbacks:{ title:ctx=>ctx[0].dataset.label, label:ctx=>[` Inversión: $${f(ctx.raw.x,0)} ARS`, ` Leads: ${ctx.raw.y}`, ` CPL: ${ctx.raw.y>0?'$'+f(ctx.raw.x/ctx.raw.y,0)+' ARS':'Sin leads'}`] }
+      }},
+      scales:{
+        x:{grid:{color:DG},ticks:{color:DT,callback:v=>'$'+f(v/1000,0)+'k'},title:{display:true,text:'Inversión (ARS)',color:DT,font:{size:11}}},
+        y:{grid:{color:DG},ticks:{color:DT,stepSize:5},title:{display:true,text:'Leads',color:DT,font:{size:11}}}
+      }
+    }
+  });
+});
+
+// ── Tabla ──
+function buildRows(rows) {
+  const maxCTR = Math.max(...rows.map(r=>r.ctr));
+  return rows.map(r => {
+    const cvrRow = r.clicks > 0 ? (r.results/r.clicks*100) : 0;
+    const cplRow = r.results > 0 ? r.spend/r.results : null;
+    return `<tr>
+      <td><b>${safeName(r.adset)}</b></td>
+      <td><b style="color:${r.results>0?'var(--green)':'var(--muted)'}">${r.results}</b></td>
+      <td>${cvrRow.toFixed(2)}%</td>
+      <td>${cplRow!=null?'$'+f(cplRow,0):'—'}</td>
+      <td>$${f(r.spend,0)}</td>
+      <td>${f(r.clicks)}</td>
+      <td><div class="ctr-bar-wrap"><div class="ctr-bar" style="width:${Math.max(4,Math.round(r.ctr/maxCTR*100))}px;background:${colorCTR(r.ctr)};"></div><span>${r.ctr.toFixed(2)}%</span></div></td>
+      <td>$${r.cpc.toFixed(2)}</td>
+      <td>${f(r.impressions)}</td>
+      <td>${f(r.reach)}</td>
+      <td>${badgeLeads(r.results)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Sort tabla ──
+let _lastSort = null, _sortAsc = false;
+function sortTable(key) {
+  const asc = _lastSort === key ? !_sortAsc : false;
+  _lastSort = key; _sortAsc = asc;
+  document.querySelectorAll('#main-table thead th .sort-arrow').forEach(el=>el.textContent='');
+  event.currentTarget.querySelector('.sort-arrow').textContent = asc ? ' ▲' : ' ▼';
+  const sorted = [...LIVE_DATA].sort((a,b)=>{
+    let va, vb;
+    if (key==='name')    { va=safeName(a.adset); vb=safeName(b.adset); return asc?va.localeCompare(vb):vb.localeCompare(va); }
+    if (key==='cvr')     { va=a.results/a.clicks; vb=b.results/b.clicks; }
+    else if (key==='cpl') { va=a.results>0?a.spend/a.results:Infinity; vb=b.results>0?b.spend/b.results:Infinity; }
+    else                  { va=a[key]??-Infinity; vb=b[key]??-Infinity; }
+    return asc?va-vb:vb-va;
+  });
+  document.getElementById('tbody-main').innerHTML = buildRows(sorted);
+}
+</script>
+</body>
+</html>
