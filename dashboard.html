@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard General — Sushi 2x1</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a; --border: #2e3347;
+      --accent: #e63946; --accent2: #f4a261; --accent3: #2ec4b6; --accent4: #8338ec;
+      --text: #e8eaf6; --muted: #8b90a7; --green: #06d6a0; --red: #ef233c; --yellow: #ffd166;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 0 0 60px; }
+    .topbar { position: sticky; top: 0; z-index: 100; background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 28px; display: flex; align-items: center; justify-content: space-between; }
+    .topbar-left { font-size: 12px; color: var(--muted); }
+    .topbar-left b { color: var(--green); }
+    .topbar-links { display: flex; gap: 10px; }
+    .btn-link { background: var(--surface2); color: var(--text); border: 1px solid var(--border); padding: 7px 14px; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; }
+    .btn-link:hover { background: var(--border); }
+    .btn-link.active { border-color: var(--accent3); color: var(--accent3); }
+    .hero { background: linear-gradient(135deg, #0a1520 0%, #0d1a30 40%, #1a1030 100%); border-bottom: 1px solid var(--border); padding: 40px 40px 32px; }
+    .hero-inner { max-width: 1200px; margin: 0 auto; }
+    .hero-badge { display: inline-block; background: var(--accent3); color: #0a1520; font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 4px 10px; border-radius: 4px; margin-bottom: 14px; }
+    .hero h1 { font-size: clamp(22px, 3.5vw, 36px); font-weight: 800; letter-spacing: -0.5px; line-height: 1.2; }
+    .hero h1 span { color: var(--accent3); }
+    .hero-meta { margin-top: 10px; font-size: 13px; color: var(--muted); display: flex; gap: 20px; flex-wrap: wrap; }
+    .hero-meta b { color: var(--text); }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+    .section { margin-top: 40px; }
+    .section-title { font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
+    .section-title .tag { font-size: 9px; letter-spacing: 1px; padding: 2px 8px; border-radius: 4px; font-weight: 700; }
+    .tag-ventas    { background: rgba(230,57,70,.2);   color: var(--accent);  border: 1px solid rgba(230,57,70,.3); }
+    .tag-personal  { background: rgba(131,56,236,.2);  color: var(--accent4); border: 1px solid rgba(131,56,236,.3); }
+    .tag-inter     { background: rgba(46,196,182,.2);  color: var(--accent3); border: 1px solid rgba(46,196,182,.3); }
+    .tag-expansion { background: rgba(6,214,160,.15);  color: var(--green);   border: 1px solid rgba(6,214,160,.3); }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+    .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 16px; position: relative; overflow: hidden; }
+    .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .kpi-card.green::before   { background: var(--green); }
+    .kpi-card.accent::before  { background: var(--accent); }
+    .kpi-card.yellow::before  { background: var(--yellow); }
+    .kpi-card.blue::before    { background: var(--accent3); }
+    .kpi-card.purple::before  { background: var(--accent4); }
+    .kpi-card.orange::before  { background: var(--accent2); }
+    .kpi-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .kpi-value { font-size: 24px; font-weight: 800; line-height: 1; }
+    .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .kpi-card.green  .kpi-value { color: var(--green); }
+    .kpi-card.accent .kpi-value { color: var(--accent); }
+    .kpi-card.yellow .kpi-value { color: var(--yellow); }
+    .kpi-card.blue   .kpi-value { color: var(--accent3); }
+    .kpi-card.purple .kpi-value { color: var(--accent4); }
+    .kpi-card.orange .kpi-value { color: var(--accent2); }
+    .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-top: 18px; }
+    .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .chart-card.wide { grid-column: 1 / -1; }
+    .chart-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+    .chart-subtitle { font-size: 11px; color: var(--muted); margin-bottom: 16px; }
+    .chart-wrap { position: relative; height: 240px; }
+    .camp-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 14px; }
+    .camp-table thead th { background: var(--surface2); color: var(--muted); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    .camp-table tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
+    .camp-table tbody tr:hover { background: var(--surface2); }
+    .camp-table tbody td { padding: 9px 12px; vertical-align: middle; }
+    .camp-name { font-weight: 700; color: var(--text); }
+    .status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; }
+    .status-dot.active { background: var(--green); }
+    .status-dot.paused { background: var(--muted); }
+    .divider { border: none; border-top: 2px solid var(--border); margin: 44px 0 0; }
+    .link-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; margin-top: 16px; }
+    .link-card-info h4 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .link-card-info p { font-size: 12px; color: var(--muted); }
+    .btn-primary { background: var(--accent3); color: #0a1520; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-block; }
+    .btn-primary:hover { opacity: .88; }
+    footer { margin-top: 60px; border-top: 1px solid var(--border); padding: 20px 24px; text-align: center; font-size: 11px; color: var(--muted); }
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+    .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .summary-card h4 { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+    .summary-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 12px; }
+    .summary-row .label { color: var(--muted); }
+    .summary-row .val { font-weight: 700; }
+    .bar-mini { height: 4px; border-radius: 2px; margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar-left">📊 Dashboard General — <b>Actualizado: 8 de junio de 2026</b> &nbsp;·&nbsp; Cuenta: 2178450249109941</span>
+  <div class="topbar-links">
+    <a href="index.html" class="btn-link">📤 Carga Excel</a>
+    <a href="informe.html" class="btn-link">🎯 Expansión Leads</a>
+    <a href="dashboard.html" class="btn-link active">📊 Dashboard</a>
+  </div>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">Dashboard General</div>
+    <h1>Sushi <span>2x1</span> — Resumen de Cuenta</h1>
+    <div class="hero-meta">
+      <span>📅 Período: <b>1 — 8 de junio de 2026</b></span>
+      <span>💰 Inversión total: <b>$877,312 ARS</b></span>
+      <span>📣 Campañas activas: <b>8</b></span>
+      <span>📊 Plataforma: <b>Meta Ads</b></span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- RESUMEN GLOBAL -->
+  <div class="section">
+    <div class="section-title">01 — Resumen Global de la Cuenta</div>
+    <div class="kpi-grid">
+      <div class="kpi-card accent"><div class="kpi-label">Inversión Total</div><div class="kpi-value">$877K</div><div class="kpi-sub">ARS — jun 1 al 8</div></div>
+      <div class="kpi-card yellow"><div class="kpi-label">Impresiones</div><div class="kpi-value">833K</div><div class="kpi-sub">Total de la cuenta</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">Alcance</div><div class="kpi-value">252K</div><div class="kpi-sub">Personas únicas</div></div>
+      <div class="kpi-card purple"><div class="kpi-label">Clics Totales</div><div class="kpi-value">11.9K</div><div class="kpi-sub">Clics en el enlace</div></div>
+      <div class="kpi-card orange"><div class="kpi-label">CPC Promedio</div><div class="kpi-value">$73</div><div class="kpi-sub">ARS por clic</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Campañas Activas</div><div class="kpi-value">8</div><div class="kpi-sub">De 271 históricas</div></div>
+    </div>
+
+    <div class="chart-grid" style="margin-top:18px;">
+      <div class="chart-card wide">
+        <div class="chart-title">Inversión por Tipo de Campaña — Junio 2026</div>
+        <div class="chart-subtitle">Distribución del gasto acumulado del mes por categoría</div>
+        <div class="chart-wrap" style="height:180px;"><canvas id="chartSpendType"></canvas></div>
+      </div>
+    </div>
+
+    <div class="summary-grid" style="margin-top:18px;">
+      <div class="summary-card">
+        <h4>🛒 Ventas</h4>
+        <div class="summary-row"><span class="label">Inversión</span><span class="val" style="color:var(--accent)">$764,031 ARS</span></div>
+        <div class="summary-row"><span class="label">Impresiones</span><span class="val">622,167</span></div>
+        <div class="summary-row"><span class="label">Clics</span><span class="val">9,139</span></div>
+        <div class="summary-row"><span class="label">CPC prom.</span><span class="val">$83.6 ARS</span></div>
+        <div class="bar-mini" style="background:var(--accent);width:87%;"></div>
+      </div>
+      <div class="summary-card">
+        <h4>👥 Búsqueda de Personal</h4>
+        <div class="summary-row"><span class="label">Inversión</span><span class="val" style="color:var(--accent4)">$90,159 ARS</span></div>
+        <div class="summary-row"><span class="label">Impresiones</span><span class="val">118,608</span></div>
+        <div class="summary-row"><span class="label">Clics</span><span class="val">4,649</span></div>
+        <div class="summary-row"><span class="label">CPC prom.</span><span class="val">$19.4 ARS</span></div>
+        <div class="bar-mini" style="background:var(--accent4);width:10%;"></div>
+      </div>
+      <div class="summary-card">
+        <h4>💬 Interacción</h4>
+        <div class="summary-row"><span class="label">Inversión</span><span class="val" style="color:var(--accent3)">$71,759 ARS</span></div>
+        <div class="summary-row"><span class="label">Impresiones</span><span class="val">96,823</span></div>
+        <div class="summary-row"><span class="label">Clics</span><span class="val">921</span></div>
+        <div class="summary-row"><span class="label">CPC prom.</span><span class="val">$77.9 ARS</span></div>
+        <div class="bar-mini" style="background:var(--accent3);width:8%;"></div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- VENTAS -->
+  <div class="section">
+    <div class="section-title">02 — Campañas de Ventas <span class="tag tag-ventas">OUTCOME_SALES</span></div>
+    <div class="kpi-grid">
+      <div class="kpi-card accent"><div class="kpi-label">Inversión Ventas</div><div class="kpi-value">$764K</div><div class="kpi-sub">ARS acumulado junio</div></div>
+      <div class="kpi-card yellow"><div class="kpi-label">Impresiones</div><div class="kpi-value">622K</div><div class="kpi-sub">Total campañas ventas</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">Alcance</div><div class="kpi-value">191K</div><div class="kpi-sub">Personas únicas</div></div>
+      <div class="kpi-card purple"><div class="kpi-label">Clics</div><div class="kpi-value">9,139</div><div class="kpi-sub">Clics en el enlace</div></div>
+      <div class="kpi-card orange"><div class="kpi-label">CPC Prom.</div><div class="kpi-value">$83.6</div><div class="kpi-sub">ARS por clic</div></div>
+    </div>
+
+    <table class="camp-table" style="margin-top:18px;">
+      <thead><tr>
+        <th>Campaña</th>
+        <th>Estado</th>
+        <th>Inversión (ARS)</th>
+        <th>Impresiones</th>
+        <th>Alcance</th>
+        <th>Clics</th>
+        <th>CPC (ARS)</th>
+        <th>% Inversión</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="camp-name">PAIS_VENTA_Pedix_AON</td>
+          <td><span class="status-dot active"></span>Activa</td>
+          <td><b style="color:var(--accent)">$459,765</b></td>
+          <td>389,816</td>
+          <td>114,249</td>
+          <td>5,881</td>
+          <td>$78.2</td>
+          <td>60%</td>
+        </tr>
+        <tr>
+          <td class="camp-name">Cordoba_VENTA_Pedix_AON</td>
+          <td><span class="status-dot active"></span>Activa</td>
+          <td><b>$214,350</b></td>
+          <td>173,878</td>
+          <td>52,467</td>
+          <td>2,177</td>
+          <td>$98.5</td>
+          <td>28%</td>
+        </tr>
+        <tr>
+          <td class="camp-name">Neuquen_VENTA_Pedix_AON</td>
+          <td><span class="status-dot active"></span>Activa</td>
+          <td><b>$39,157</b></td>
+          <td>27,656</td>
+          <td>8,913</td>
+          <td>652</td>
+          <td>$60.1</td>
+          <td>5%</td>
+        </tr>
+        <tr>
+          <td class="camp-name">BUENOS_AIRES_VENTA_TUCAN</td>
+          <td><span class="status-dot active"></span>Activa</td>
+          <td><b>$50,702</b></td>
+          <td>30,617</td>
+          <td>16,050</td>
+          <td>429</td>
+          <td>$118.2</td>
+          <td>7%</td>
+        </tr>
+        <tr style="background:rgba(255,255,255,.02)">
+          <td class="camp-name" style="color:var(--muted);">Neuquen_VENTA_Pedix - BOOM</td>
+          <td><span class="status-dot paused"></span>Pausada</td>
+          <td style="color:var(--muted);">$7,812</td>
+          <td style="color:var(--muted);">5,168</td>
+          <td style="color:var(--muted);">3,081</td>
+          <td style="color:var(--muted);">92</td>
+          <td style="color:var(--muted);">$84.9</td>
+          <td style="color:var(--muted);">—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="chart-grid">
+      <div class="chart-card wide">
+        <div class="chart-title">Inversión vs. Clics por Campaña de Ventas</div>
+        <div class="chart-subtitle">Eficiencia de presupuesto — campañas activas</div>
+        <div class="chart-wrap"><canvas id="chartVentas"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- BÚSQUEDA DE PERSONAL -->
+  <div class="section">
+    <div class="section-title">03 — Búsqueda de Personal <span class="tag tag-personal">OUTCOME_LEADS</span></div>
+    <div class="kpi-grid">
+      <div class="kpi-card purple"><div class="kpi-label">Inversión Personal</div><div class="kpi-value">$90K</div><div class="kpi-sub">ARS acumulado junio</div></div>
+      <div class="kpi-card yellow"><div class="kpi-label">Impresiones</div><div class="kpi-value">118K</div><div class="kpi-sub">3 campañas activas</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">Alcance</div><div class="kpi-value">41.5K</div><div class="kpi-sub">Personas únicas</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Clics</div><div class="kpi-value">4,649</div><div class="kpi-sub">Alto CTR relativo</div></div>
+      <div class="kpi-card orange"><div class="kpi-label">CPC Prom.</div><div class="kpi-value">$19.4</div><div class="kpi-sub">ARS — muy eficiente</div></div>
+    </div>
+
+    <table class="camp-table" style="margin-top:18px;">
+      <thead><tr>
+        <th>Zona</th>
+        <th>Estado</th>
+        <th>Inversión (ARS)</th>
+        <th>Impresiones</th>
+        <th>Alcance</th>
+        <th>Clics</th>
+        <th>CPC (ARS)</th>
+        <th>CTR Est.</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="camp-name">Salta</td>
+          <td><span class="status-dot active"></span>Activa</td>
+          <td><b style="color:var(--accent4)">$39,455</b></td>
+          <td>53,444</td>
+          <td>20,985</td>
+          <td>2,221</td>
+          <td>$17.8</td>
+          <td>4.16%</td>
+        </tr>
+        <tr>
+          <td class="camp-name">San Rafael</td>
+          <td><span class="status-dot active"></span>Activa</td>
+          <td><b>$35,065</b></td>
+          <td>44,825</td>
+          <td>10,616</td>
+          <td>1,743</td>
+          <td>$20.1</td>
+          <td>3.89%</td>
+        </tr>
+        <tr>
+          <td class="camp-name">San Juan</td>
+          <td><span class="status-dot active"></span>Activa</td>
+          <td><b>$15,640</b></td>
+          <td>20,339</td>
+          <td>9,910</td>
+          <td>685</td>
+          <td>$22.8</td>
+          <td>3.37%</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="chart-grid">
+      <div class="chart-card wide">
+        <div class="chart-title">Clics por Zona — Búsqueda de Personal</div>
+        <div class="chart-subtitle">Volumen de clics acumulados por zona activa</div>
+        <div class="chart-wrap" style="height:160px;"><canvas id="chartPersonal"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- INTERACCIÓN -->
+  <div class="section">
+    <div class="section-title">04 — Interacción <span class="tag tag-inter">OUTCOME_ENGAGEMENT</span></div>
+    <div class="kpi-grid">
+      <div class="kpi-card blue"><div class="kpi-label">Inversión</div><div class="kpi-value">$71.8K</div><div class="kpi-sub">ARS — push orgánicos</div></div>
+      <div class="kpi-card yellow"><div class="kpi-label">Impresiones</div><div class="kpi-value">96.8K</div><div class="kpi-sub">Junio 1 al 8</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">Alcance</div><div class="kpi-value">32.4K</div><div class="kpi-sub">Personas únicas</div></div>
+      <div class="kpi-card purple"><div class="kpi-label">Clics</div><div class="kpi-value">921</div><div class="kpi-sub">Clics generados</div></div>
+      <div class="kpi-card orange"><div class="kpi-label">Frec. Promedio</div><div class="kpi-value">~3x</div><div class="kpi-sub">Imp / Alcance</div></div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card wide">
+        <div class="chart-title">Interacción — Push Orgánicos</div>
+        <div class="chart-subtitle">1 campaña activa — Comparativa con otras categorías en clics</div>
+        <div class="chart-wrap" style="height:160px;"><canvas id="chartInter"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- LINK A EXPANSIÓN -->
+  <div class="section">
+    <div class="section-title">05 — Expansión de Franquicias <span class="tag tag-expansion">204 Leads</span></div>
+    <div class="link-card">
+      <div class="link-card-info">
+        <h4>Informe detallado de Leads — Primera Etapa</h4>
+        <p>204 leads generados · $563,248 ARS invertidos · CPL $2,761 ARS · 10 zonas · Actualizado al 8 de junio de 2026</p>
+      </div>
+      <a href="informe.html" class="btn-primary">Ver informe completo →</a>
+    </div>
+  </div>
+
+</div>
+
+<footer>Dashboard generado automáticamente desde Meta Ads API — Cuenta 2178450249109941 — Datos al 8 de junio de 2026</footer>
+
+<script>
+const DG = 'rgba(255,255,255,0.06)', DT = '#8b90a7';
+Chart.defaults.color = DT;
+Chart.defaults.borderColor = DG;
+const BASE = { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#1a1d27', borderColor:'#2e3347', borderWidth:1, titleColor:'#e8eaf6', bodyColor:'#8b90a7' } } };
+
+// Spend by type — doughnut
+new Chart(document.getElementById('chartSpendType'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Ventas ($764K)', 'Personal ($90K)', 'Interacción ($72K)'],
+    datasets: [{ data: [764031, 90159, 71759], backgroundColor: ['rgba(230,57,70,0.85)','rgba(131,56,236,0.85)','rgba(46,196,182,0.85)'], borderWidth: 2, borderColor: '#1a1d27', hoverOffset: 8 }]
+  },
+  options: { ...BASE, plugins: { ...BASE.plugins, legend: { display:true, position:'right', labels:{ color:DT, padding:14, font:{size:12}, boxWidth:14 } } } }
+});
+
+// Ventas bar
+new Chart(document.getElementById('chartVentas'), {
+  type: 'bar',
+  data: {
+    labels: ['PAIS Pedix AON', 'Córdoba Pedix AON', 'Buenos Aires Tucán', 'Neuquén Pedix AON'],
+    datasets: [
+      { label: 'Inversión (ARS)', data: [459765, 214350, 50702, 39157], backgroundColor: 'rgba(230,57,70,0.7)', borderRadius: 5 },
+      { label: 'Clics ×50', data: [5881*50, 2177*50, 429*50, 652*50], backgroundColor: 'rgba(244,162,97,0.6)', borderRadius: 5 }
+    ]
+  },
+  options: { ...BASE, scales: { x:{grid:{display:false}}, y:{grid:{color:DG},ticks:{color:DT,callback:v=>'$'+Math.round(v/1000)+'k'}} }, plugins: { ...BASE.plugins, legend:{ display:true, position:'top', labels:{ color:DT, font:{size:11}, boxWidth:12 } } } }
+});
+
+// Personal bar
+new Chart(document.getElementById('chartPersonal'), {
+  type: 'bar',
+  data: {
+    labels: ['Salta', 'San Rafael', 'San Juan'],
+    datasets: [{ data: [2221, 1743, 685], backgroundColor: ['rgba(131,56,236,0.85)','rgba(131,56,236,0.7)','rgba(131,56,236,0.5)'], borderRadius: 6 }]
+  },
+  options: { ...BASE, indexAxis:'y', scales: { x:{grid:{color:DG},ticks:{color:DT}}, y:{grid:{display:false},ticks:{color:'#e8eaf6',font:{size:13}}} } }
+});
+
+// Interacción vs otras — comparativa clics
+new Chart(document.getElementById('chartInter'), {
+  type: 'bar',
+  data: {
+    labels: ['Ventas', 'Personal', 'Interacción'],
+    datasets: [{ data: [9139, 4649, 921], backgroundColor: ['rgba(230,57,70,0.7)','rgba(131,56,236,0.7)','rgba(46,196,182,0.8)'], borderRadius: 6 }]
+  },
+  options: { ...BASE, scales: { x:{grid:{display:false}}, y:{grid:{color:DG},ticks:{color:DT}} } }
+});
+</script>
+</body>
+</html>
